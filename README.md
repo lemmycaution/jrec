@@ -1,6 +1,6 @@
 # Jrec
 
-TODO: Write a gem description
+Simple object modelling for Postgresql JSON
 
 ## Installation
 
@@ -20,7 +20,7 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+run `jrec --help` for cli usage
 
 ## Contributing
 

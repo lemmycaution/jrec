@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = Jrec::VERSION
   spec.authors       = ["Onur Uyar"]
   spec.email         = ["me@onuruyar.com"]
-  spec.summary       = %q{Simple PLV8 Json Models}
+  spec.summary       = %q{Simple object mapping for Postgresql JSON}
   spec.homepage      = ""
   spec.license       = "MIT"
 
