@@ -1,0 +1,133 @@
+#!/usr/bin/env ruby
+
+require 'jrec'
+require 'commander/import'
+require 'active_support/inflector'
+
+def db_config
+  @db_config ||= Jrec.config.dup.tap{|s| s.delete(:size) }
+end
+
+def pg_config
+  @pg_config ||= db_config.dup.merge({'dbname' => 'postgres'})
+end
+
+def run_sql sql, root = false
+  pg = PG::EM::Client.new(root ? pg_config : db_config)
+  puts "----SQL\n#{sql}\n----SQL END"
+  pg.exec(sql)  
+end
+
+# :name is optional, otherwise uses the basename of this executable
+program :name, 'Jrec'
+program :version, '1.0.0'
+program :description, 'Simple PLV8 Json Models'
+
+command :'collection:create' do |c|
+  c.syntax = 'create NAME'
+  c.description = 'Create collection with given name'
+  c.action do |args, options|
+    coll = args[0].tableize
+    Jrec.exec_func "create_table", "public", coll
+    Jrec.exec_func "create_trigger", "public", coll
+  end
+end
+
+command :'collection:destroy' do |c|
+  c.syntax = 'destroy NAME'
+  c.description = 'Destroy collection with given name'
+  c.action do |args, options|
+    coll = args[0].tableize
+    Jrec.exec_func "drop_table", "public", coll
+  end
+end
+
+command :'db:reset' do |c|
+  c.syntax = 'reset'
+  c.description = 'Reset Database'
+  c.action do |args, options|
+    drop_schema rescue nil
+    create_schema
+    migrate
+  end
+end
+
+def migrate
+  # run setup if exists
+
+  setup_sql = "#{Jrec.gem_root}/lib/jrec/sql/setup.sql"
+  puts setup_sql    
+  if File.exists?(setup_sql)
+    puts "Running Setup SQL File: #{setup_sql}"
+    run_sql(File.read(setup_sql)) 
+  end
+  
+  path = "#{Jrec.root}/db/migrate"
+  
+  # where are we?
+  puts "Migration running on: #{path}"
+
+  if File.exists?("#{path}/db/migrate")
+    Dir.glob("#{path}/db/migrate/*.sql").sort.each do |sql|
+
+      puts "Running SQL File: #{sql}"
+      run_sql(File.read(sql)) 
+
+    end   
+  end
+end
+command :'db:migrate' do |c|
+  c.syntax = 'migrate'
+  c.description = 'Migrate Database'
+  c.action do |args, options|
+
+    migrate
+  
+  end
+end
+
+def drop_schema 
+  sql = "drop schema public cascade;"
+  run_sql sql
+end
+command :'db:drop_schema' do |c|
+  c.syntax = 'drop_schema'
+  c.description = 'Drops all schemas'
+  c.action do |args, options|
+    drop_schema
+  end
+end
+
+def create_schema
+  sql = "create schema public;"
+  run_sql sql
+end
+command :'db:create_schema' do |c|
+  c.syntax = 'drop_schema'
+  c.description = 'Create database'
+  c.action do |args, options|
+    create_schema
+  end
+end
+
+command :'db:drop' do |c|
+  c.syntax = 'drop'
+  c.description = 'Drop database'
+  c.action do |args, options|
+    sql = "DROP DATABASE IF EXISTS \"%s\";" % [db_config[:dbname]]
+    run_sql sql, true
+  end
+end
+
+command :'db:create' do |c|
+  c.syntax = 'drop'
+  c.description = 'Create database'
+  c.action do |args, options|
+    puts "Db Creating... #{db_config[:dbname]}"            
+    sql = "CREATE DATABASE \"%s\" ENCODING = 'utf8';" % [db_config[:dbname]]
+    run_sql sql, true
+  end
+end
+
+
+
