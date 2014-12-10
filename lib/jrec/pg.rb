@@ -1,3 +1,4 @@
+require 'ostruct'
 require 'oj'
 require 'uri'
 require 'yaml'
@@ -42,7 +43,7 @@ module Jrec
       @@config ||= begin
         
         if File.exists?(config_file)
-          db = YAML.load(config_file)[env]
+          db = OpenStruct.new(YAML.load_file(config_file)[env])
         elsif ENV['DATABASE_URL']
           db = URI.parse(ENV['DATABASE_URL'])
         else
